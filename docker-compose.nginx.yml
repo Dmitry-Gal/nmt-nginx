@@ -1,0 +1,63 @@
+version: '3.7'
+
+x-default-logging: &default-logging
+  max-size: '10m'
+  max-file: '3'
+
+volumes:
+  certs:
+    name: certs.vlm
+
+services:
+  nmt1:
+    image: nginx:stable-alpine
+    container_name: nmt1
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./nginx1.conf:/etc/nginx/nginx.conf
+      - ./proxy.conf:/etc/nginx/proxy.conf
+      - certs:/certs
+    logging:
+      options:
+        <<: *default-logging
+    depends_on: [certs]
+
+  nmt2:
+    image: nginx:stable-alpine
+    container_name: nmt2
+#    ports:
+#      - 44443:443
+    expose: 
+      - 443
+    volumes:
+      - ./nginx2.conf:/etc/nginx/nginx.conf
+      - certs:/certs
+      - ./conf.d:/etc/nginx/conf.d
+    logging:
+      options:
+        <<: *default-logging
+    depends_on: [certs]
+
+  nmt3:
+    image: nginx:stable-alpine
+    container_name: nmt3
+    volumes:
+      - ./test1.sh:/test1.sh
+      - certs:/certs
+    logging:
+      options:
+        <<: *default-logging
+    command: sleep 365d
+
+  certs:
+    image: stakater/ssl-certs-generator:1.0
+    container_name: certs
+    environment:
+      SSL_SUBJECT: test-admin.local.net
+    volumes:
+      - certs:/certs
+    logging:
+      options:
+        <<: *default-logging
